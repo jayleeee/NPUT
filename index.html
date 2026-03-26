@@ -649,7 +649,7 @@ function GuideTab({ test }) {
   const genGuide = async () => {
     setLoadG(true);
     try {
-      const r = await apiGenerateGuide(GEMINI_API_KEY, test.purpose, test.images);
+      const r = await apiGenerateGuide(null, test.purpose, test.images);
       const entry = { id: uid(), createdAt: new Date().toISOString(), guide: r };
       const newHistory = [entry, ...guideHistory];
       setGuideHistory(newHistory);
@@ -685,7 +685,7 @@ function GuideTab({ test }) {
   const genScenarios = async () => {
     setLoadS(true);
     try {
-      const r = await apiGenerateScenarios(GEMINI_API_KEY, test.purpose, test.images);
+      const r = await apiGenerateScenarios(null, test.purpose, test.images);
       const sc = r.slice(0, 3).map((c, i) => ({ id: uid(), order: i+1, content: c }));
       setScenarios(sc); updateTest(test.id, { scenarios: sc });
       toast('success', 'AI 시나리오가 생성되었습니다.');
@@ -1097,7 +1097,7 @@ function AITestTab({ test }) {
   const runTest = async () => {
     setLoading(true);
     try {
-      const r = await apiGenerateAITest(GEMINI_API_KEY, currentTest.purpose, currentTest.images);
+      const r = await apiGenerateAITest(null, currentTest.purpose, currentTest.images);
       updateTest(test.id, { aiTestResult: r });
       toast('success', 'AI 가상 테스트가 완료되었습니다.');
     } catch(e) { toast('error', e.message); } finally { setLoading(false); }
@@ -1218,7 +1218,7 @@ function TestProgressTab({ test }) {
   const genInsights = async () => {
     setLoadI(true);
     try {
-      const r = await apiGenerateUTInsights(GEMINI_API_KEY, currentTest.purpose, aiTestResult, currentTest.testers);
+      const r = await apiGenerateUTInsights(null, currentTest.purpose, aiTestResult, currentTest.testers);
       const entry = { id: uid(), createdAt: new Date().toISOString(), insights: r };
       const newHistory = [entry, ...insightHistory];
       updateTest(test.id, { insightHistory: newHistory, insights: { taskInsights: r.taskInsights, uxInsights: r.uxInsights }, status:'completed' });
@@ -1472,7 +1472,7 @@ function AnnotationsTab({ test }) {
     if (!currentTest.images.length) { toast('error', '화면 이미지가 없습니다.'); return; }
     setLoading(true);
     try {
-      const r = await apiGenerateAnnotations(GEMINI_API_KEY, currentTest.images[selIdx], allIns);
+      const r = await apiGenerateAnnotations(null, currentTest.images[selIdx], allIns);
       const newAnn = { imageIndex: selIdx, points: r.map((p,i) => ({ id: `a${i}`, ...p })) };
       const updated = [...(currentTest.annotations||[]).filter(a=>a.imageIndex!==selIdx), newAnn];
       updateTest(test.id, { annotations: updated });
