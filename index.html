@@ -232,10 +232,10 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 7px 14px;
+      padding: 8px 18px;
       border-radius: 10px;
-      font-size: 14px;
-      font-weight: 500;
+      font-size: 16px;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.15s;
       background: none;
@@ -316,26 +316,28 @@
     .sub-tab-btn {
       display: flex;
       align-items: center;
-      gap: 5px;
-      padding: 6px 14px;
-      border-radius: 8px;
+      gap: 6px;
+      padding: 6px 16px;
+      border-radius: 999px;
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all 0.18s;
       background: none;
-      border: none;
+      border: 1.5px solid var(--outline);
       color: var(--sub);
     }
 
     .sub-tab-btn:hover {
       color: var(--dark);
+      border-color: var(--dark);
       background: var(--bg);
     }
 
     .sub-tab-btn.active {
-      background: var(--dark);
+      background: #2E343A;
       color: white;
+      border-color: #2E343A;
     }
 
     .overlay {
@@ -727,9 +729,11 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
     // ============================================================
 
     // Icon SVG components (inline SVG for zero-dependency)
-    const Icon = ({ d, size = 18, strokeWidth = 2, fill = 'none', className = '' }) => (
+    // d: string (단일 path) or array (복수 path), circle: [cx, cy, r] optional
+    const Icon = ({ d, size = 18, strokeWidth = 2, fill = 'none', className = '', circle }) => (
       <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <path d={d} />
+        {Array.isArray(d) ? d.map((p, i) => <path key={i} d={p} />) : <path d={d} />}
+        {circle && <circle cx={circle[0]} cy={circle[1]} r={circle[2]} />}
       </svg>
     );
 
@@ -752,6 +756,7 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
       chart: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
       msg: 'M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z',
       clip: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+      bookUser: { d: ['M9 3l6 0', 'M10 9l4 0', 'M10 3v6l-4 11a.7 .7 0 0 0 .5 1h11a.7 .7 0 0 0 .5 -1l-4 -11v-6'] },
     };
 
     function Spinner({ size = 20 }) {
@@ -832,7 +837,7 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
           <div style={{ padding: '20px 20px 16px', borderBottom: '1px solid var(--outline)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div className="primary-bg" style={{ width: 32, height: 32, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Icon d={ICONS.users} size={18} className="text-white" />
+                <Icon {...ICONS.bookUser} size={18} className="text-white" />
               </div>
               <span style={{ fontWeight: 800, fontSize: 15, color: 'var(--dark)' }}>NPUT</span>
             </div>
@@ -897,7 +902,7 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
           <div style={{ textAlign: 'center', marginBottom: 36 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 16 }}>
               <div className="primary-bg" style={{ width: 48, height: 48, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(9,171,73,0.3)' }}>
-                <Icon d={ICONS.users} size={26} className="text-white" />
+                <Icon {...ICONS.bookUser} size={26} className="text-white" />
               </div>
               <h1 style={{ fontSize: 32, fontWeight: 800, color: 'var(--dark)', margin: 4 }}>NPUT</h1>
             </div>
@@ -946,12 +951,22 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
       const [images, setImages] = useState([]);
       const fileRef = useRef(null);
 
+      const MAX_IMAGES = 6;
       const handleUpload = (e) => {
-        Array.from(e.target.files || []).forEach(f => {
-          const reader = new FileReader();
-          reader.onload = ev => setImages(prev => [...prev, ev.target.result]);
-          reader.readAsDataURL(f);
+        const files = Array.from(e.target.files || []);
+        setImages(prev => {
+          const remaining = MAX_IMAGES - prev.length;
+          if (remaining <= 0) { toast('error', `이미지는 최대 ${MAX_IMAGES}개까지 첨부할 수 있습니다.`); return prev; }
+          const toAdd = files.slice(0, remaining);
+          if (files.length > remaining) toast('info', `이미지는 최대 ${MAX_IMAGES}개까지 첨부 가능합니다. ${toAdd.length}개만 추가되었습니다.`);
+          toAdd.forEach(f => {
+            const reader = new FileReader();
+            reader.onload = ev => setImages(p => p.length < MAX_IMAGES ? [...p, ev.target.result] : p);
+            reader.readAsDataURL(f);
+          });
+          return prev;
         });
+        e.target.value = '';
       };
 
       const create = () => {
@@ -1047,14 +1062,23 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
                 <textarea value={purpose} onChange={e => setPurpose(e.target.value)} placeholder="AI가 이를 바탕으로 가이드와 시나리오를 생성합니다." rows={4} className="input-base" style={{ resize: 'none' }} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>화면 이미지</label>
-                <div onClick={() => fileRef.current?.click()} style={{ border: '2px dashed var(--outline)', borderRadius: 12, padding: '24px 16px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = 'var(--primary-light)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--outline)'; e.currentTarget.style.background = ''; }}>
-                  <Icon d={ICONS.img} size={28} style={{ color: 'var(--sub)', margin: '0 auto 8px' }} />
-                  <p style={{ fontSize: 13, color: 'var(--sub)', marginBottom: 4 }}>클릭하여 이미지 선택</p>
-                  <p style={{ fontSize: 11, color: 'var(--sub)' }}>PNG, JPG (복수 선택 가능)</p>
-                </div>
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
+                  <span>화면 이미지</span>
+                  <span style={{ fontSize: 12, fontWeight: 400, color: images.length >= MAX_IMAGES ? '#ef4444' : 'var(--sub)' }}>{images.length} / {MAX_IMAGES}</span>
+                </label>
+                {images.length < MAX_IMAGES ? (
+                  <div onClick={() => fileRef.current?.click()} style={{ border: '2px dashed var(--outline)', borderRadius: 12, padding: '24px 16px', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary)'; e.currentTarget.style.background = 'var(--primary-light)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--outline)'; e.currentTarget.style.background = ''; }}>
+                    <Icon d={ICONS.img} size={28} style={{ color: 'var(--sub)' }} />
+                    <p style={{ fontSize: 13, color: 'var(--sub)', margin: 0 }}>클릭하여 이미지 선택</p>
+                    <p style={{ fontSize: 11, color: 'var(--sub)', margin: 0 }}>PNG, JPG · 최대 {MAX_IMAGES}개</p>
+                  </div>
+                ) : (
+                  <div style={{ border: '2px dashed #fca5a5', borderRadius: 12, padding: '16px', textAlign: 'center', background: '#fff1f2' }}>
+                    <p style={{ fontSize: 13, color: '#ef4444', margin: 0 }}>이미지 최대 개수({MAX_IMAGES}개)에 도달했습니다.</p>
+                  </div>
+                )}
                 <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={handleUpload} />
                 {images.length > 0 && (
                   <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
@@ -1066,6 +1090,9 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
                     ))}
                   </div>
                 )}
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginTop: 8, padding: '8px 12px', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8 }}>
+                  <span style={{ fontSize: 12, color: '#92400e', lineHeight: 1.5 }}>💡 여러 안을 테스트할 경우 <strong>A/B/C/D 순서대로</strong> 업로드해 주세요. (파일명은 읽지 않습니다)</span>
+                </div>
               </div>
               <div style={{ display: 'flex', gap: 10, paddingTop: 4 }}>
                 <button onClick={() => { setShowModal(false); setName(''); setPurpose(''); setImages([]); }} className="btn-outline" style={{ flex: 1, justifyContent: 'center' }}>취소</button>
@@ -1853,7 +1880,7 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
       return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {/* 서브탭 */}
-          <div style={{ background: 'white', border: '1px solid var(--outline)', borderRadius: 12, padding: 4, display: 'inline-flex', gap: 3 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             {[['ai_test', 'AI 가상 테스트', ICONS.bolt], ['direct_test', '직접 테스트', ICONS.users]].map(([id, label, icon]) => (
               <button key={id} onClick={() => setSubTab(id)} className={`sub-tab-btn ${subTab === id ? 'active' : ''}`}>
                 <Icon d={icon} size={14} /> {label}
@@ -2081,12 +2108,22 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
         updateTest(test.id, { name: headerDraft.name.trim(), purpose: headerDraft.purpose.trim(), images: headerDraft.images });
         setEditingHeader(false); toast('success', '테스트 정보가 수정되었습니다.');
       };
+      const HDR_MAX = 6;
       const addHeaderImages = (e) => {
-        Array.from(e.target.files || []).forEach(f => {
-          const reader = new FileReader();
-          reader.onload = ev => setHeaderDraft(prev => ({ ...prev, images: [...prev.images, ev.target.result] }));
-          reader.readAsDataURL(f);
+        const files = Array.from(e.target.files || []);
+        setHeaderDraft(prev => {
+          const remaining = HDR_MAX - prev.images.length;
+          if (remaining <= 0) { toast('error', `이미지는 최대 ${HDR_MAX}개까지 첨부할 수 있습니다.`); return prev; }
+          const toAdd = files.slice(0, remaining);
+          if (files.length > remaining) toast('info', `이미지는 최대 ${HDR_MAX}개까지 첨부 가능합니다. ${toAdd.length}개만 추가되었습니다.`);
+          toAdd.forEach(f => {
+            const reader = new FileReader();
+            reader.onload = ev => setHeaderDraft(p => p.images.length < HDR_MAX ? { ...p, images: [...p.images, ev.target.result] } : p);
+            reader.readAsDataURL(f);
+          });
+          return prev;
         });
+        e.target.value = '';
       };
 
       return (
@@ -2114,7 +2151,10 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
                     <textarea value={headerDraft.purpose} onChange={e => setHeaderDraft({ ...headerDraft, purpose: e.target.value })} rows={3} className="input-base" style={{ resize: 'none' }} />
                   </div>
                   <div>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 8, color: 'var(--sub)' }}>화면 이미지</label>
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, marginBottom: 8, color: 'var(--sub)' }}>
+                      <span>화면 이미지</span>
+                      <span style={{ color: headerDraft.images.length >= HDR_MAX ? '#ef4444' : 'var(--sub)' }}>{headerDraft.images.length} / {HDR_MAX}</span>
+                    </label>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                       {headerDraft.images.map((img, i) => (
                         <div key={i} style={{ position: 'relative' }}>
@@ -2123,9 +2163,11 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
                             style={{ position: 'absolute', top: -5, right: -5, width: 16, height: 16, borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>×</button>
                         </div>
                       ))}
-                      <button onClick={() => headerFileRef.current?.click()} style={{ width: 56, height: 56, borderRadius: 8, border: '2px dashed var(--outline)', background: 'none', cursor: 'pointer', color: 'var(--sub)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Icon d={ICONS.plus} size={20} />
-                      </button>
+                      {headerDraft.images.length < HDR_MAX && (
+                        <button onClick={() => headerFileRef.current?.click()} style={{ width: 56, height: 56, borderRadius: 8, border: '2px dashed var(--outline)', background: 'none', cursor: 'pointer', color: 'var(--sub)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Icon d={ICONS.plus} size={20} />
+                        </button>
+                      )}
                       <input ref={headerFileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={addHeaderImages} />
                     </div>
                   </div>
@@ -2175,11 +2217,16 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
             )}
 
             {/* Tabs */}
-            <div style={{ background: 'white', border: '1px solid var(--outline)', borderRadius: 14, padding: 5, display: 'inline-flex', gap: 4, marginBottom: 20 }}>
-              {TABS.map(t => (
-                <button key={t.id} onClick={() => setTab(t.id)} className={`tab-btn ${tab === t.id ? 'active' : ''}`}>
-                  <Icon d={t.icon} size={15} /> {t.label}
-                </button>
+            <div style={{ background: 'white', border: '1px solid var(--outline)', borderRadius: 14, padding: 5, display: 'inline-flex', alignItems: 'center', gap: 0, marginBottom: 20 }}>
+              {TABS.map((t, i) => (
+                <React.Fragment key={t.id}>
+                  {i > 0 && (
+                    <span style={{ color: 'var(--sub)', fontSize: 18, fontWeight: 300, padding: '0 2px', userSelect: 'none', lineHeight: 1 }}>›</span>
+                  )}
+                  <button onClick={() => setTab(t.id)} className={`tab-btn ${tab === t.id ? 'active' : ''}`}>
+                    <Icon d={t.icon} size={15} /> {t.label}
+                  </button>
+                </React.Fragment>
               ))}
             </div>
 
