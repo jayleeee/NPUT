@@ -3,6 +3,6 @@
   "outputDirectory": ".",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/UT-Assistant.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
