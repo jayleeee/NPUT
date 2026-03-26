@@ -521,6 +521,28 @@
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { }
     };
 
+    // 이미지 압축 (Canvas API — max 1200px, JPEG 0.75)
+    const compressImage = (file) => new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1200;
+          let { width: w, height: h } = img;
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round(h * MAX / w); w = MAX; }
+            else       { w = Math.round(w * MAX / h); h = MAX; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.75));
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
     // 서버 데이터 API (Supabase 연동 시 api/tests.js 백엔드만 교체)
     const testsAPI = {
       fetch: () => fetch('/api/tests').then(r => r.json()).catch(() => []),
@@ -960,9 +982,7 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
           const toAdd = files.slice(0, remaining);
           if (files.length > remaining) toast('info', `이미지는 최대 ${MAX_IMAGES}개까지 첨부 가능합니다. ${toAdd.length}개만 추가되었습니다.`);
           toAdd.forEach(f => {
-            const reader = new FileReader();
-            reader.onload = ev => setImages(p => p.length < MAX_IMAGES ? [...p, ev.target.result] : p);
-            reader.readAsDataURL(f);
+            compressImage(f).then(b64 => setImages(p => p.length < MAX_IMAGES ? [...p, b64] : p));
           });
           return prev;
         });
@@ -2117,9 +2137,7 @@ position은 이미지 내 위치(0-100%). 3-6개 작성.`;
           const toAdd = files.slice(0, remaining);
           if (files.length > remaining) toast('info', `이미지는 최대 ${HDR_MAX}개까지 첨부 가능합니다. ${toAdd.length}개만 추가되었습니다.`);
           toAdd.forEach(f => {
-            const reader = new FileReader();
-            reader.onload = ev => setHeaderDraft(p => p.images.length < HDR_MAX ? { ...p, images: [...p.images, ev.target.result] } : p);
-            reader.readAsDataURL(f);
+            compressImage(f).then(b64 => setHeaderDraft(p => p.images.length < HDR_MAX ? { ...p, images: [...p.images, b64] } : p));
           });
           return prev;
         });
