@@ -545,9 +545,16 @@
 
     // 서버 데이터 API (Supabase 연동 시 api/tests.js 백엔드만 교체)
     const testsAPI = {
-      fetch: () => fetch('/api/tests').then(r => r.json()).catch(() => []),
-      upsert: (test) => fetch('/api/tests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(test) }).catch(() => { }),
-      delete: (id) => fetch(`/api/tests?id=${id}`, { method: 'DELETE' }).catch(() => { }),
+      fetch: () => fetch('/api/tests').then(r => {
+        if (!r.ok) return r.json().then(e => { console.error('[testsAPI.fetch] error:', e); return []; });
+        return r.json();
+      }).catch(e => { console.error('[testsAPI.fetch] network error:', e); return []; }),
+      upsert: (test) => fetch('/api/tests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(test) }).then(r => {
+        if (!r.ok) return r.json().then(e => { console.error('[testsAPI.upsert] error:', e); });
+      }).catch(e => console.error('[testsAPI.upsert] network error:', e)),
+      delete: (id) => fetch(`/api/tests?id=${id}`, { method: 'DELETE' }).then(r => {
+        if (!r.ok) return r.json().then(e => { console.error('[testsAPI.delete] error:', e); });
+      }).catch(e => console.error('[testsAPI.delete] network error:', e)),
     };
 
     // ============================================================
