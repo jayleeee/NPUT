@@ -543,18 +543,35 @@
       reader.readAsDataURL(file);
     });
 
-    // 서버 데이터 API (Supabase 연동 시 api/tests.js 백엔드만 교체)
+    // 이미지 로컬 저장소 (Supabase 페이로드 한도 초과 방지)
+    const imgStore = {
+      save: (id, images) => { try { if (images?.length) localStorage.setItem(`nput_img_${id}`, JSON.stringify(images)); else localStorage.removeItem(`nput_img_${id}`); } catch(e) {} },
+      load: (id) => { try { return JSON.parse(localStorage.getItem(`nput_img_${id}`) || 'null'); } catch(e) { return null; } },
+      remove: (id) => { try { localStorage.removeItem(`nput_img_${id}`); } catch(e) {} },
+    };
+
+    // 서버 데이터 API — 이미지는 localStorage, 나머지만 Supabase에 저장
     const testsAPI = {
       fetch: () => fetch('/api/tests').then(r => {
         if (!r.ok) return r.json().then(e => { console.error('[testsAPI.fetch] error:', e); return []; });
-        return r.json();
+        return r.json().then(tests => tests.map(t => {
+          const localImgs = imgStore.load(t.id);
+          return localImgs ? { ...t, images: localImgs } : t;
+        }));
       }).catch(e => { console.error('[testsAPI.fetch] network error:', e); return []; }),
-      upsert: (test) => fetch('/api/tests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(test) }).then(r => {
-        if (!r.ok) return r.json().then(e => { console.error('[testsAPI.upsert] error:', e); });
-      }).catch(e => console.error('[testsAPI.upsert] network error:', e)),
-      delete: (id) => fetch(`/api/tests?id=${id}`, { method: 'DELETE' }).then(r => {
-        if (!r.ok) return r.json().then(e => { console.error('[testsAPI.delete] error:', e); });
-      }).catch(e => console.error('[testsAPI.delete] network error:', e)),
+      upsert: (test) => {
+        imgStore.save(test.id, test.images);
+        const serverTest = { ...test, images: [] }; // 이미지 제거 후 서버 전송
+        return fetch('/api/tests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(serverTest) }).then(r => {
+          if (!r.ok) return r.json().then(e => { console.error('[testsAPI.upsert] error:', e); });
+        }).catch(e => console.error('[testsAPI.upsert] network error:', e));
+      },
+      delete: (id) => {
+        imgStore.remove(id);
+        return fetch(`/api/tests?id=${id}`, { method: 'DELETE' }).then(r => {
+          if (!r.ok) return r.json().then(e => { console.error('[testsAPI.delete] error:', e); });
+        }).catch(e => console.error('[testsAPI.delete] network error:', e));
+      },
     };
 
     // ============================================================
